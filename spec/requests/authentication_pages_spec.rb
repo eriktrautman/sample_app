@@ -20,7 +20,10 @@ describe "Authentication" do
 
 			it { should have_selector('title', text: 'Sign in' ) }
 			it { should have_error_message('Invalid') } #our custom function
-		
+			it { should_not have_link('Profile') }
+			it { should_not have_link('Settings') }
+
+
 			describe "after visiting another page" do
 				before { click_link "Home" }
 				it { should_not have_selector('div.alert.alert-error') }
@@ -64,6 +67,20 @@ describe "Authentication" do
 
 					it "should render the desired protected page" do
 						page.should have_selector('title', text: 'Edit user')
+					end
+
+					describe "when signing in again" do
+						before do
+							delete signout_path
+							visit signin_path
+							fill_in "Email", with: user.email
+							fill_in "Password", with: user.password
+							click_button "Sign in"
+						end
+
+						it "should render the default (profile) page" do
+							page.should have_selector('title', text: user.name)
+						end
 					end
 				end
 			end
@@ -111,6 +128,16 @@ describe "Authentication" do
 			before { sign_in non_admin }
 
 			describe "submitting a DELETE request to the Users#destroy action" do
+				before { delete user_path(user) }
+				specify { response.should redirect_to(root_path) }
+			end
+		end
+
+		describe "as admin user" do
+			let(:user) { FactoryGirl.create(:user, admin: true) }
+			before { sign_in user }
+
+			describe "submitting a self DELETE request to Users#destroy action" do
 				before { delete user_path(user) }
 				specify { response.should redirect_to(root_path) }
 			end

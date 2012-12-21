@@ -6,7 +6,11 @@ class UsersController < ApplicationController
   before_filter :admin_user,      only: :destroy
 
   def new
-  	@user = User.new
+    if signed_in?
+      redirect_to '/'
+    else
+  	   @user = User.new
+    end
   end
   
   def show
@@ -14,20 +18,28 @@ class UsersController < ApplicationController
   end
   
   def create
-  	@user = User.new(params[:user])
-  	if @user.save
-      sign_in @user
-  		flash[:success] = "Welcome to my humble Sample App!"
-  		redirect_to @user
-  	else
-  		render 'new'
-  	end
+    if signed_in?
+      redirect_to '/'
+    else
+    	@user = User.new(params[:user])
+    	if @user.save
+        sign_in @user
+    		flash[:success] = "Welcome to my humble Sample App!"
+    		redirect_to @user
+    	else
+    		render 'new'
+    	end
+    end
   end
 
   def destroy
-    User.find(params[:id]).destroy
-    flash[:success] = "User destroyed."
-    redirect_to users_url
+    if User.find(params[:id]) == current_user
+      redirect_to(root_path)
+    else
+      User.find(params[:id]).destroy
+      flash[:success] = "User destroyed."
+      redirect_to users_url
+    end
   end
 
   def index
