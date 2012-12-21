@@ -1,5 +1,10 @@
 class UsersController < ApplicationController
   
+  # to require correctly authenticated users to do any of the major user actions
+  before_filter :signed_in_user,  only: [:index, :edit, :update, :destroy]
+  before_filter :correct_user,    only:[:edit, :update]
+  before_filter :admin_user,      only: :destroy
+
   def new
   	@user = User.new
   end
@@ -19,8 +24,51 @@ class UsersController < ApplicationController
   	end
   end
 
-  def edit
-    # will display the "edit user" template for a given user ID if access is authorized
-    @user = User.find(params[:id])
+  def destroy
+    User.find(params[:id]).destroy
+    flash[:success] = "User destroyed."
+    redirect_to users_url
   end
+
+  def index
+    # will display the list of all users (subject to authentication)
+    @users = User.paginate(page: params[:page])
+  end
+
+  def edit
+    # will display the "edit user" template for a given user ID if access is authorized (taken care of by the before_filter above)
+  end
+
+  def update
+    # will take the submitted update PUT request and run it and go to the user page.  
+    # If unsuccessful, rerender the edit page.
+    if @user.update_attributes(params[:user])
+      flash[:success] = "Profile updated"
+      sign_in @user   # needed because the remember_token gets reset upon ANY new save!
+      redirect_to @user 
+    else
+      render 'edit'
+    end
+  end
+
+  private
+
+    # makes sure the user is signed in, otherwise redirects to signin with the flash below
+    def signed_in_user
+      unless signed_in?
+        store_location
+        redirect_to signin_url, notice: "Please sign in."
+      end
+    end
+
+    # makes sure the user whose path we're trying to access (find) is the same as the current user
+    def correct_user
+      @user = User.find(params[:id])
+      redirect_to(root_path) unless current_user?(@user)
+    end
+
+    # makes sure this user is actually an admin, otherwise it bounces him
+    def admin_user
+      redirect_to(root_path) unless current_user.admin?
+    end
 end
