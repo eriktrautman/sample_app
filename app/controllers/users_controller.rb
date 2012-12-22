@@ -15,6 +15,7 @@ class UsersController < ApplicationController
   
   def show
   	@user = User.find(params[:id])
+    @microposts = @user.microposts.paginate(page: params[:page])
   end
   
   def create
@@ -65,13 +66,7 @@ class UsersController < ApplicationController
 
   private
 
-    # makes sure the user is signed in, otherwise redirects to signin with the flash below
-    def signed_in_user
-      unless signed_in?
-        store_location
-        redirect_to signin_url, notice: "Please sign in."
-      end
-    end
+    # moved the signed_in_user to the SessionsHelper module
 
     # makes sure the user whose path we're trying to access (find) is the same as the current user
     def correct_user
